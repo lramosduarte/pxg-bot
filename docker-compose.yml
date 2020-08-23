@@ -1,0 +1,29 @@
+version: '3.1'
+
+services:
+
+  db:
+    image: postgres
+    restart: always
+    networks:
+      - default
+    env_file:
+      - database.env
+    ports:
+      - 4455:5432
+    volumes:
+      - ${PWD}/postgres/:/var/lib/postgresql/data
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    env_file:
+      - database.env
+    ports:
+      - 5544:80
+    depends_on:
+      - db
+    networks:
+      - default
+    volumes:
+      - ${PWD}/pgadmin/servers.json:/pgadmin4/servers.json
+      - ${PWD}/pgadmin/pgpassfile:/pgadmin4/pgpassfile
