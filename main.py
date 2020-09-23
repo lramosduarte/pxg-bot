@@ -97,7 +97,7 @@ async def run_bot():
     app.add_routes(routes)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', os.getenv('SERVER_PORT', '8888'))
+    site = web.TCPSite(runner, '0.0.0.0', os.getenv('PORT', '8888'))
     await site.start()
 
     db.connect(reuse_if_open=True)
