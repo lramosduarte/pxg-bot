@@ -1,7 +1,9 @@
-import os
-import json
 import discord
+import json
+import os
 
+from aiohttp import web
+from asyncio import get_event_loop
 from enum import Enum
 from discord.ext import commands
 from peewee import (
@@ -22,6 +24,8 @@ db = PostgresqlDatabase(
     port=os.getenv('POSTGRES_PORT'),
 )
 bot = commands.Bot(command_prefix='!')
+
+routes = web.RouteTableDef()
 
 
 class TiposBolas(Enum):
@@ -82,6 +86,31 @@ async def valor_na_bola(ctx, nome_pokemon, novo_valor):
     pokemon.save()
     await ctx.send(f'O preço para o pokemon {pokemon.nome} foi atualizado para: {novo_valor}')
 
-db.connect(reuse_if_open=True)
-db.create_tables([Pokemon])
-bot.run(os.getenv('TOKEN_DISCORD', ''))
+
+@routes.get('/')
+async def http_health_check(self):
+    return web.Response(text='ok', status=200)
+
+
+async def run_bot():
+    app = web.Application()
+    app.add_routes(routes)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', os.getenv('SERVER_PORT', '8888'))
+    await site.start()
+
+    db.connect(reuse_if_open=True)
+    db.create_tables([Pokemon])
+    try:
+        await bot.start(os.getenv('TOKEN_DISCORD', ''))
+    except:
+        bot.close()
+        raise
+    finally:
+        await runner.cleanup()
+
+
+if __name__ == '__main__':
+    loop = get_event_loop()
+    loop.run_until_complete(run_bot())
